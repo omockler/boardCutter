@@ -9,7 +9,7 @@ namespace BoardCutter
     class Board
     {
         public double Price { get; set; }
-        public int Length { get; set; }
+        public double Length { get; set; }
 
         public double PricePerUnit 
         {

@@ -22,21 +22,45 @@ namespace BoardCutter
                 new Cut { Number = 12, Length = 16  },
                 new Cut { Number = 12, Length = 36  }
             };
-            var longestBoard = 20*12;
-            var boardCost = 7.43;
+
+            //Current price list for 2x4's at local menards on 11/14/12
+            var stockList = new List<Board> {
+                new Board { Length = 20*12, Price = 7.43 },
+                new Board { Length = 18*12, Price = 6.65 },
+                new Board { Length = 16*12, Price = 5.44 },
+                new Board { Length = 14*12, Price = 4.89 },
+                new Board { Length = 12*12, Price = 4.11 },
+                new Board { Length = 10*12, Price = 2.99 },
+                new Board { Length = 116.625, Price = 3.49 },
+                new Board { Length = 104.625, Price = 2.93 },
+                new Board { Length = 92.625, Price = 2.39 },
+                new Board { Length = 7*12, Price = 2.05 },
+            };
+
+            //Calculate based on always picking the smallest stock stock big enough for the cut when new stock is needed
+            SmallestStock(cuts, stockList);
+
+            //Calculate based on always picking the largest stock when a new stock is needed
+            LargestStock(cuts, stockList);
+            
+            Console.Read();
+        }
+
+        private static void SmallestStock(List<Cut> cuts, List<Board> stockList)
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void LargestStock(IList<Cut> cuts, IList<Board> stockList)
+        {
+            var longest = stockList.OrderByDescending(x => x.Length).First();
+            var longestBoard = longest.Length;
+            var boardCost = longest.Price;
             var allCuts = ExpandCuts(cuts).ToList();
-
-            //var connectionString = "mongodb://localhost/?safe=true";
-            //var server = MongoServer.Create(connectionString);
-
-            //var db = server.GetDatabase("BoardCuter");
-            //var boardsCollection = db.GetCollection<Board>("boards");
-
-            //Throw if largest board isn't long enough for longest cut
 
             var scraps = new List<double>();
             int boardsUsed = 0;
-            
+
             while (allCuts.Any())
             {
                 var longestCut = allCuts.OrderByDescending(x => x).First();
@@ -70,10 +94,9 @@ namespace BoardCutter
                 Console.Write("\n");
                 Console.WriteLine("Utilization Percent: {0}", (1 - (waste / (boardsUsed * longestBoard))) * 100);
             }
-            Console.Read();
         }
 
-        private static IEnumerable<double> ExpandCuts(List<Cut> cuts)
+        private static IEnumerable<double> ExpandCuts(IList<Cut> cuts)
         {
             foreach (var cut in cuts)
             {
