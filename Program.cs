@@ -38,39 +38,64 @@ namespace BoardCutter
             };
 
             //Calculate based on always picking the smallest stock stock big enough for the cut when new stock is needed
-            SmallestStock(cuts, stockList);
+            SmallestStock(ExpandCuts(cuts).OrderByDescending(x => x).ToList(), stockList);
 
             //Calculate based on always picking the largest stock when a new stock is needed
-            LargestStock(cuts, stockList);
+            LargestStock(ExpandCuts(cuts).OrderByDescending(x => x).ToList(), stockList);
             
             Console.Read();
         }
 
-        private static void SmallestStock(List<Cut> cuts, List<Board> stockList)
+        private static void SmallestStock(IList<double> cuts, List<Board> stockList)
         {
-            throw new NotImplementedException();
+            var stockUsed = new List<Board>();
+            var scraps = new List<double>();
+            while (cuts.Any())
+            {
+                //switch to from list to queue
+                var longestCut = cuts.OrderByDescending(x => x).First();
+                cuts.Remove(longestCut);
+                if (scraps.Any(x => x > longestCut))
+                {
+                    scraps = scraps.CutFromScrap(longestCut);
+                }
+                else
+                {
+                    var newStock = stockList.Where(s => s.Length > longestCut).OrderBy(s => s.PricePerUnit).First();
+                    //Remove Saw Width
+                    stockUsed.Add(newStock);
+                    scraps.Add(newStock.Length - longestCut);
+                }
+            }
+
+            Console.WriteLine("Number of boards used: {0}", stockUsed.Count());
+            var waste = 0.0;
+            var total = 0.0;
+            var totalLength = 0.0;
+            stockUsed.ForEach(u => total += u.Price);
+            stockUsed.ForEach(u => totalLength += u.Length);
+            scraps.ForEach(u => waste += u);
+            Console.WriteLine("Total Price: {0}", total);
+
+            Console.WriteLine("Utilized: {0}", (1 - (waste / totalLength)) * 100);
         }
 
-        private static void LargestStock(IList<Cut> cuts, IList<Board> stockList)
+        private static void LargestStock(IList<double> cuts, IList<Board> stockList)
         {
             var longest = stockList.OrderByDescending(x => x.Length).First();
             var longestBoard = longest.Length;
             var boardCost = longest.Price;
-            var allCuts = ExpandCuts(cuts).ToList();
 
             var scraps = new List<double>();
             int boardsUsed = 0;
 
-            while (allCuts.Any())
+            while (cuts.Any())
             {
-                var longestCut = allCuts.OrderByDescending(x => x).First();
-                allCuts.Remove(longestCut);
+                var longestCut = cuts.OrderByDescending(x => x).First();
+                cuts.Remove(longestCut);
                 if (scraps.Any(x => x > longestCut))
                 {
-                    var currentScrap = scraps.Where(x => x > longestCut).OrderBy(x => x).First();
-                    scraps.Remove(currentScrap);
-                    //TODO: Remove saw width
-                    scraps.Add(currentScrap - longestCut);
+                    scraps = scraps.CutFromScrap(longestCut);
                 }
                 else
                 {
