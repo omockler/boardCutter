@@ -13,7 +13,7 @@ namespace BoardCutter
             var currentScrap = scraps.Where(x => x > longestCut).OrderBy(x => x).First();
             scraps.Remove(currentScrap);
             //TODO: Remove saw width
-            scraps.Add(currentScrap - longestCut);
+            scraps.Add(currentScrap - longestCut - 0.125);
 
             return scraps;
         }

@@ -10,17 +10,19 @@ namespace BoardCutter
 {
     class Program
     {
+        public const double kerf = 0.125;
         static void Main(string[] args)
         {
             var cuts = new List<Cut> {
-                new Cut { Number = 2,  Length = 82  },
-                new Cut { Number = 2,  Length = 36  },
-                new Cut { Number = 12, Length = 36  },
-                new Cut { Number = 4,  Length = 132 },
-                new Cut { Number = 4,  Length = 94  },
-                new Cut { Number = 14, Length = 24  },
-                new Cut { Number = 12, Length = 16  },
-                new Cut { Number = 12, Length = 36  }
+                new Cut { Number = 13, Length = 27.5 },
+                new Cut { Number = 6,  Length = 129  },
+                new Cut { Number = 3,  Length = 105  },
+                new Cut { Number = 8,  Length = 15   },
+                new Cut { Number = 2,  Length = 6*12 },
+                new Cut { Number = 2,  Length = 42   },
+                new Cut { Number = 7,  Length = 42   },
+                new Cut { Number = 3,  Length = 38.5 },
+                new Cut { Number = 3,  Length =32.3  }
             };
 
             //Current price list for 2x4's at local menards on 11/14/12
@@ -39,6 +41,8 @@ namespace BoardCutter
 
             //Calculate based on always picking the smallest stock stock big enough for the cut when new stock is needed
             SmallestStock(ExpandCuts(cuts).OrderByDescending(x => x).ToList(), stockList);
+
+            Console.WriteLine("");
 
             //Calculate based on always picking the largest stock when a new stock is needed
             LargestStock(ExpandCuts(cuts).OrderByDescending(x => x).ToList(), stockList);
@@ -68,17 +72,11 @@ namespace BoardCutter
                 }
             }
 
-            Console.WriteLine("Number of boards used: {0}", stockUsed.Count());
-            var waste = 0.0;
-            var total = 0.0;
-            var totalLength = 0.0;
-            stockUsed.ForEach(u => total += u.Price);
-            stockUsed.ForEach(u => totalLength += u.Length);
-            scraps.ForEach(u => waste += u);
-            Console.WriteLine("Total Price: {0}", total);
-
-            Console.WriteLine("Utilized: {0}", (1 - (waste / totalLength)) * 100);
-        }
+            Console.WriteLine("Number of boards used: {0}", stockUsed.Count());            
+            Console.WriteLine("Total Cost: {0}", stockUsed.Select(s => s.Price).Sum());
+            OutputPurchaseList(stockUsed);
+            OutputWaste(scraps, stockUsed.Select(s => s.Length).Sum());
+        }        
 
         private static void LargestStock(IList<double> cuts, IList<Board> stockList)
         {
@@ -87,7 +85,7 @@ namespace BoardCutter
             var boardCost = longest.Price;
 
             var scraps = new List<double>();
-            int boardsUsed = 0;
+            var stockUsed = new List<Board>();
 
             while (cuts.Any())
             {
@@ -99,26 +97,37 @@ namespace BoardCutter
                 }
                 else
                 {
-                    boardsUsed++;
-                    //TODO: Remove saw width
-                    scraps.Add(longestBoard - longestCut);
+                    stockUsed.Add(longest);
+                    scraps.Add(longestBoard - longestCut - kerf);
                 }
             }
 
-            Console.WriteLine("Total number of boards used: {0}\n", boardsUsed);
-            Console.WriteLine("Total Cost: {0}", boardsUsed * boardCost);
-            if (scraps.Any())
+            Console.WriteLine("Total number of boards used: {0}", stockUsed.Count());
+            Console.WriteLine("Total Cost: {0}", stockUsed.Count() * boardCost);
+            OutputWaste(scraps, stockUsed.Count() * longestBoard);            
+        }
+
+        private static void OutputPurchaseList(List<Board> stockUsed)
+        {
+            //Output Purchase List
+            var purchaseList = stockUsed.GroupBy(s => s.Length).Select(s => String.Format("{0} | {1}", s.Key / 12, s.Count()));
+            Console.WriteLine("Purchase List: ", purchaseList);
+            purchaseList.ToList().ForEach(i => Console.WriteLine("\t {0}", i));
+        }
+
+        private static void OutputWaste(List<double> scraps, double totalStock)
+        {
+            double waste = 0;            
+            
+            Console.Write("Remainders: ");
+            foreach (var s in scraps)
             {
-                double waste = 0;
-                Console.Write("Remainders: ");
-                foreach (var s in scraps)
-                {
-                    waste += s;
-                    Console.Write("{0}, ", s);
-                }
-                Console.Write("\n");
-                Console.WriteLine("Utilization Percent: {0}", (1 - (waste / (boardsUsed * longestBoard))) * 100);
+                waste += s;
+                Console.Write("{0}, ", s);
             }
+            Console.Write("\n");
+            Console.WriteLine("Wasted Length: {0}", waste/12);
+            Console.WriteLine("Utilization Percent: {0}", (1 - (waste / totalStock)) * 100);
         }
 
         private static IEnumerable<double> ExpandCuts(IList<Cut> cuts)
